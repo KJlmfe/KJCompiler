@@ -1,4 +1,4 @@
 KJCompiler
 ==========
 
-It's a simple compiler written in
+用JavaScript写的一个自定义语言编译器
