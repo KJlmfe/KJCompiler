@@ -1,0 +1,127 @@
+<!DOCTYPE>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <script type="text/javascript">
+            /*log打印函数 每次在原log上追加str和换行*/
+            function log(str) { 
+                var log_node = document.getElementById("log");
+                var text_node = document.createTextNode(str);
+                var br_node = document.createElement("br");
+                log_node.appendChild(text_node);
+                log_node.appendChild(br_node);
+            }
+        </script>
+        <script type="text/javascript">
+            /* 字符串字符处理雷 */
+            function Reader(str) {
+                this.data = str;
+                this.currPos = 0;
+                this.length = str.length;
+            }
+            /* 获取字符串下一个字符 */
+            Reader.prototype.nextChar = function() {
+                if(this.currPos >= this.length) {
+                    return -1;
+                }
+                return this.data[this.currPos++];
+            }
+            /* 回退当前读取位置指针 n是回退的步伐 默认为1步*/
+            Reader.prototype.retract = function(n) {
+                if(n === undefined) {
+                    n = 1;
+                }
+                this.currPos -= n;
+                if(this.currPos < 0) {
+                    this.currPos = 0;
+                }
+            }
+        </script>
+        <script type="text/javascript">
+            /* 定义Token类型 */
+            function Token(type, text) {
+                this.type = type;
+                this.text = text;
+            }
+            /* 定义关键字 保留字 */
+            Token.tokens = {};
+            Token.tokens.EOS_TOKEN = 1; //end of stream
+            // using + 1 allows adding a new token easily later
+            Token.tokens.COLON_TOKEN = Token.tokens.EOS_TOKEN + 1; //:
+            Token.tokens.SEMICOLON_TOKEN = Token.tokens.COLON_TOKEN + 1; //;
+            Token.tokens.LEFTPAREN_TOKEN = Token.tokens.SEMICOLON_TOKEN + 1; //(
+            Token.tokens.RIGHTPAREN_TOKEN = Token.tokens.LEFTPAREN_TOKEN + 1; //)
+            Token.tokens.LEFTBRACE_TOKEN = Token.tokens.RIGHTPAREN_TOKEN + 1; //{
+            Token.tokens.RIGHTBRACE_TOKEN = Token.tokens.LEFTBRACE_TOKEN + 1; //}
+            Token.tokens.MOD_TOKEN = Token.tokens.RIGHTBRACE_TOKEN + 1; //%
+
+            Token.backwardMap = {}; //for inverse look-up
+            for(var x in Token.tokens) {
+                Token.backwardMap[Token.tokens[x]] = x;
+            }
+        </script>
+        <script type="text/javascript">
+            function Scanner(reader) {
+                this.reader = reader;
+                this.currentToken = new Token();
+                this.currLine = 0;
+                this.state = Scanner.START_STATE;
+            }
+            Scanner.START_STATE = 0;
+            Scanner.prototype.makeToken = function(type, text) {
+                this.currentToken.type = type;
+                this.currentToken.text = text;
+                return type;
+            };
+            Scanner.prototype.nextToken = function() {
+                switch(this.state) {
+                    case Scanner.START_STATE:
+                        while(true) {
+                            var next_char = this.reader.nextChar();
+                            switch(next_char) {
+                                case -1 : return this.makeToken(Token.tokens.EOS_TOKEN);
+                                case ':': return this.makeToken(Token.tokens.COLON_TOKEN);
+                                case ';': return this.makeToken(Token.tokens.SEMICOLON_TOKEN);
+                                case '(': return this.makeToken(Token.tokens.LEFTPAREN_TOKEN);
+                                case ')': return this.makeToken(Token.tokens.RIGHTPAREN_TOKEN);
+                                case '{': return this.makeToken(Token.tokens.LEFTBRACE_TOKEN);
+                                case '}': return this.makeToken(Token.tokens.RIGHTBRACE_TOKEN);
+                                case '%': return this.makeToken(Token.tokens.MOD_TOKEN);
+                                case '\r': case '\n':
+                                    this.currLine++;
+                                default:
+                                    //ignore other char
+                            }
+                        }
+                    default:
+                        break;
+                }
+            };
+        </script>
+        <script type="text/javascript">
+            window.onload = function () {
+                var textarea = document.getElementById("source_code");
+                var run_button = document.getElementById("run");
+                /* 测试Scanner类 逐个读取Token 且输出每次Token到log*/
+                run_button.onclick = function() {
+                    var code_to_be_compiled = textarea.value;
+                    var reader = new Reader(code_to_be_compiled);
+                    var scanner = new Scanner(reader);
+                    while(true) {
+                        var next_token = scanner.nextToken();
+                        if(next_token == Token.tokens.EOS_TOKEN) {
+                            break;
+                        }
+                        log("Reader Token: " + Token.backwardMap[next_token]);
+                    }
+                };
+            };
+        </script>
+    </head>
+    <body>
+        <textarea id="source_code" style="width:600px; height:200px"></textarea>
+        <button id="run">Run</button>
+        <div id="log">
+        </div>
+    </body>
+</html>
